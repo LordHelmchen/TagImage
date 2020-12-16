@@ -12,6 +12,7 @@ find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 include_directories(${LIBCONFIG++_INCLUDE_DIRS})
 # Fügen Sie der ausführbaren Datei dieses Projekts eine Quelle hinzu.
 add_executable (TagImage "TagImage.cpp" "TagImage.h" "XMPTagger.h" "XMPTagger.cpp" "ImaggaClient.h" "ImaggaClient.cpp" "multipart_parser.cpp" "multipart_parser.h")
+target_compile_features(TagImage PRIVATE cxx_std_11) #exiv2 won't compile with c++17'
 target_include_directories(TagImage PRIVATE ${BFGROUP_LYRA_INCLUDE_DIRS})
 target_link_libraries(TagImage PRIVATE cpprestsdk::cpprest)
 target_link_libraries(TagImage PRIVATE exiv2lib exiv2-xmp)

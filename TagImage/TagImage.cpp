@@ -11,8 +11,11 @@
 #include "ImaggaClient.h"
 #include <codecvt>
 #include <simpleini.h>
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#include <experimental/filesystem>
 
 using namespace std;
+namespace fs = std::experimental::filesystem;
 
 int main(int argc, char* argv[])
 {
@@ -61,7 +64,12 @@ int main(int argc, char* argv[])
         cout << cli << endl;
         return 0;
     }
-	cout << "opening file:" << fileName << endl;
+	cout << "Opening file:" << fileName << endl;
+    if (!fs::exists(fileName))
+    {
+        cerr << "File " << fileName << " could not be found.";
+        return 3;
+    }
     auto xt = new XMPTagger(fileName);
     if (!overwriteTags && xt->hasXmpTags())
     {
@@ -70,7 +78,24 @@ int main(int argc, char* argv[])
     }
     else
     {
+        fs::path p = fileName;
+        auto ftime = fs::last_write_time(p);
+
         ImaggaClient ic(apiKey, apiSecret, langCode);
+        try
+        {
+            int callsLeft = ic.apiCallsLeft();
+            cout << "You have " << callsLeft << " API calls left." << endl;
+            if (callsLeft <= 0)
+            {
+                cerr << "No API calls left." << endl;
+                return 5;
+            }
+        }
+        catch(runtime_error &e){
+            cerr << e.what() << endl;
+            return 4;
+        }
         ic.fetch(fileName);
         ic.scrub(minConfidence);
         vector<string> keyWords;
@@ -78,6 +103,7 @@ int main(int argc, char* argv[])
             keyWords.push_back(utf8converter.to_bytes(t));
         xt->setSubject(keyWords);
         xt->save();
+        fs::last_write_time(p, ftime);
     }
 	return 0;
 }

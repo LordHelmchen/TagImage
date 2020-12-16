@@ -1,4 +1,4 @@
-imagga_apikey = "<replace-with-your-api-key>"
-imagga_apisecret = "<replace-with-your-api-secret>"
+imagga_apikey = <replace-with-your-api-key>
+imagga_apisecret = <replace-with-your-api-secret>
 imagga_minimum_confidence = 30.0
-language_code = "en"
+language_code = en

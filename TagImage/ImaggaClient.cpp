@@ -17,12 +17,10 @@ ImaggaClient::~ImaggaClient()
 {
 }
 
+
 bool ImaggaClient::fetch(string imageFileName)
 {
-	http_client_config config;
-	credentials cred(apiKey, apiSecret);
-	config.set_credentials(cred);
-	http_client client(U("https://api.imagga.com/"), config);
+	http_client client = buildClient();
 	MultipartParser multi;
 	multi.AddFile("image", imageFileName);
 	uri_builder builder(U("uploads"));
@@ -66,7 +64,7 @@ bool ImaggaClient::fetch(string imageFileName)
 		uploadid = requestUploadId.get();
 	}
 	catch (const std::exception& e) {
-		cerr << "Error exception: " << e.what();
+		cerr << "Error exception: " << e.what() << endl;
 		return false;
 	}
 	auto requestTags = client.request(methods::GET, uri_builder(U("v2")).append_path(U("tags")).append_query(U("image_upload_id"), uploadid).append_query(U("language"), langCode).to_string())
@@ -81,7 +79,7 @@ bool ImaggaClient::fetch(string imageFileName)
 		requestTags.wait();
 	}
 	catch (const std::exception& e) {
-		cerr << "Error exception: " << e.what();
+		cerr << "Error exception: " << e.what() << endl;
 		return false;
 	}
 	json::value jsonTags;
@@ -94,7 +92,7 @@ bool ImaggaClient::fetch(string imageFileName)
 		jsonTags = jsonResult[U("tags")];
 	}
 	catch (const std::exception& e) {
-		cerr << "Error exception: " << e.what();
+		cerr << "Error exception: " << e.what() << endl;
 		return false;
 	}
 	if (jsonTags.is_null())
@@ -102,7 +100,7 @@ bool ImaggaClient::fetch(string imageFileName)
 	for each (auto t in jsonTags.as_array())
 	{
 		auto confidence = t[U("confidence")].as_double();
-		wstring tag = t[U("tag")][U("de")].as_string();
+		wstring tag = t[U("tag")][langCode].as_string();
 		tagsMap[tag] = confidence;
 	}
 
@@ -119,8 +117,7 @@ bool ImaggaClient::fetch(string imageFileName)
 		requestDelete.wait();
 	}
 	catch (const std::exception& e) {
-		cerr << "Error exception: " << e.what();
-		return false;
+		cerr << "Error exception: " << e.what() << endl << "Could not delete the cached file." << endl;
 	}
 	return true;
 }
@@ -156,7 +153,32 @@ void ImaggaClient::scrub(double confidence)
 
 int ImaggaClient::apiCallsLeft()
 {
-	return 0;
+	http_client client = buildClient();
+	auto requestUsage = client.request(methods::GET, uri_builder(U("v2")).append_path(U("usage")).append_query(U("concurrency"), 1).to_string())
+		.then([](http_response response)
+			{
+				if (response.status_code() == 401)
+					throw runtime_error("Wrong imagga credentials.");
+				if (response.status_code() != 200)
+					throw runtime_error(GetError(response));
+				return response.extract_json();
+			});
+	try {
+		requestUsage.wait();
+	}
+	catch (const std::exception& e) {
+		cerr << "Error exception: " << e.what();
+		return false;
+	}
+	auto r = requestUsage.get()[U("result")];
+	auto l = r[U("monthly_limit")];
+	auto p = r[U("monthly_processed")];
+	int limit = 0, processed = 0;
+	if(!l.is_null() && l.is_integer())
+		limit = l.as_integer();
+	if (!p.is_null() && p.is_integer())
+		processed = p.as_integer();
+	return limit - processed;
 }
 
 string ImaggaClient::GetError(http_response response)
@@ -170,4 +192,12 @@ string ImaggaClient::GetError(http_response response)
 	}
 	catch (...) {}
 	return "Returned " + std::to_string(response.status_code()) + " " + converter.to_bytes(msg);
+}
+
+http_client ImaggaClient::buildClient()
+{
+	http_client_config config;
+	credentials cred(apiKey, apiSecret);
+	config.set_credentials(cred);
+	return http_client(U("https://api.imagga.com/"), config);
 }

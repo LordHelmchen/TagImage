@@ -10,7 +10,7 @@ namespace fs = std::experimental::filesystem;
 XMPTagger::XMPTagger(string fileName)
 {
 	if(!fs::exists(fileName))
-		throw fs::filesystem_error("file not found");
+		throw fs::filesystem_error("File not found", error_code());
 	Exiv2::XmpParser::initialize();
 	image = Exiv2::ImageFactory::open(fileName);
 	assert(image.get() != 0);

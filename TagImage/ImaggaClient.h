@@ -24,6 +24,7 @@ public:
 	int apiCallsLeft();
 	static string GetError(http_response response);
 private:
+	http_client buildClient();
 	wstring apiKey, apiSecret, langCode;
 	map<wstring, double> tagsMap;
 };
