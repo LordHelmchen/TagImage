@@ -29,10 +29,12 @@ I just built it with Visual Studio 2019, but it is a Cmake project without opera
 
 ### Dependencies
 
+```
 vcpkg install exiv2[xmp]:x64-windows
 vcpkg install simpleini:x64-windows
 vcpkg install cpprestsdk:x64-windows
 vcpkg install lyra:x64-windows
+```
 
 ## Credits
 
