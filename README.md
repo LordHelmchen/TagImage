@@ -21,7 +21,7 @@ OPTIONS, ARGUMENTS:
   -o <overwrite>          overwrite existing subject tag
 ```
 
-The default behaviour is to skip files, that already have XMP subject data. You can force it to overwrite these with the -o option.
+The default behaviour is to skip files, that already have XMP subject data. You can force it to overwrite these with the -o 1 option.
 
 ## Build
 
